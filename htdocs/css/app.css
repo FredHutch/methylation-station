@@ -1,0 +1,154 @@
+body {
+  font-family: "Helvetica Neue", Helvetica, sans-serif;
+  font-size: 16px;
+  color: #444;
+
+  /* 40px - 15px (.container-fluid) = 25px */
+  padding-top: 40px;
+  padding-left: 25px;
+  padding-right: 25px;
+  padding-bottom: 40px;
+}
+
+/* From https://docs.angularjs.org/api/ng/directive/ngCloak */
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+  display: none !important;
+}
+
+a[ng-click], .panel-heading[ng-click] {
+  cursor: pointer;
+}
+
+h1 img {
+  display: inline-block;
+  height: 60px;
+  vertical-align: baseline;
+  position: relative;
+  bottom: -24px;
+  margin-left: -5px;
+  margin-right: -10px;
+  margin-top: -24px;
+}
+
+h1 small {
+  font-size: 0.5em;
+  padding-left: 1em;
+}
+
+label input[type=file] {
+  display: none;
+}
+
+.alignment-name h4 {
+  margin-top: 0;
+}
+
+.open-file {
+  margin-right: 40px;
+}
+
+.close-file {
+  margin-right: 6px;
+}
+
+.close-file:hover {
+  text-decoration: none;
+}
+
+.close-file .glyphicon {
+  top: 2px;
+}
+
+.actions {
+  display: inline-block;
+}
+
+.explanation, .resources {
+  max-width: 40em;
+}
+
+.explanation h1, .explanation h2, .explanation h3, .explanation h4, .explanation h5 {
+  margin-top: 2em;
+}
+
+.resources {
+  margin-top: 4em;
+}
+
+methylation-diagram {
+  display: block;
+}
+
+methylation-diagram svg {
+  overflow: visible !important;
+}
+
+svg text {
+  cursor: default;
+}
+
+svg line {
+  shape-rendering: crispEdges;
+}
+
+figcaption {
+  font-size: 85%;
+  max-width: 700px;
+}
+
+.panel-body > .checkbox:first-child {
+  margin-top: 0;
+}
+
+.panel-body > .checkbox:last-child {
+  margin-bottom: 0;
+}
+
+.options-panel label {
+  font-weight: normal;
+}
+
+table.heatmap {
+  font-size: 14px;
+}
+
+table.heatmap > tbody > tr > td,
+table.heatmap > tbody > tr > th {
+  border-top: none;
+}
+
+table.heatmap > thead > tr > th,
+table.heatmap > tbody > tr > td {
+  text-align: center;
+}
+
+table.heatmap > tbody > tr > th small {
+  font-weight: normal;
+  color: #777;
+}
+
+table.heatmap th.avg, table.heatmap td.avg {
+  border-left: 4px solid white;
+}
+
+table.heatmap th, table.heatmap td {
+  white-space: nowrap;
+}
+
+.footer {
+  margin-top: 5em;
+  font-size: 14px;
+}
+
+body.file-drop-hover #file-drop-screen {
+  display: block !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 20em;
+  text-align: center;
+  padding-top: 25%;
+}

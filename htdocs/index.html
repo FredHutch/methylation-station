@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html ng-app="methylation-station" ng-controller="app as app">
+  <head>
+    <meta charset="UTF-8">
+    <title>Methylation Station</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/app.css" media="screen" type="text/css">
+    <link rel="icon" type="image/png" href="favicon.png">
+  </head>
+  <body file-drop file-name="app.fasta.name" file-data="app.fasta.text" file-data-as="Text">
+    <div class="container-fluid">
+
+      <!-- Header -->
+      <div class="row">
+        <div class="col col-sm-12">
+          <h1>
+            <img src="train.svg" alt="Approaching train">
+            Methylation Station
+            <small>All aboard for the CpG islands! 🏝</small>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Button bar -->
+      <div class="row">
+        <div class="col col-sm-12">
+          <div class="panel panel-default">
+            <div class="panel-body">
+              <label class="btn btn-primary open-file">
+                <span class="glyphicon glyphicon-open-file"></span>
+                Open an alignment
+                <input type="file" file-model
+                  file-name="app.fasta.name"
+                  file-data="app.fasta.text"
+                  file-data-as="Text">
+              </label>
+
+              <div class="actions">
+                <a class="btn btn-success"
+                  download="{{ app.alignment.name }}.svg"
+                  ng-click="$event.target.href = !diagram.rendered ? '' : diagram.toURL()"
+                  ng-disabled="!diagram.rendered">
+                  <span class="glyphicon glyphicon-picture"></span>
+                  Export diagram as SVG
+                </a>
+
+                <a class="btn btn-success"
+                  download="{{ app.alignment.name }}.csv"
+                  ng-click="$event.target.href = !app.alignment.cpgSites ? '' : app.tableToURL()"
+                  ng-disabled="!app.alignment.cpgSites">
+                  <span class="glyphicon glyphicon-list-alt"></span>
+                  Export summary spreadsheet
+                </a>
+
+                <a class="btn btn-success"
+                  download="{{ app.alignment.name }}.csv"
+                  ng-click="$event.target.href = !app.alignment.analysisSites ? '' : app.dataToURL()"
+                  ng-disabled="!app.alignment.analysisSites">
+                  <span class="glyphicon glyphicon-download-alt"></span>
+                  Export analyzed data
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- About and help text -->
+      <div class="row">
+        <div class="col col-sm-12" ng-if="!app.fasta.name">
+          <div class="explanation">
+            <p>
+              This app is for analyzing and visualizing DNA methylation data.
+            </p>
+
+            <p>
+              Get started by loading a
+              <a href="https://en.wikipedia.org/wiki/Multiple_sequence_alignment">multiple-sequence
+              alignment</a> in <a href="https://en.wikipedia.org/wiki/FASTA_format">FASTA format</a>.
+              The first sequence in the alignment should be an (unconverted)
+              reference sequence.  The remaining sequences must be
+              <a href="https://en.wikipedia.org/wiki/Bisulfite_sequencing">bisulfite-converted</a>.
+            </p>
+
+            <p>
+              Sequence names must be unique within the alignment.
+            </p>
+
+            <p>
+              All sequences should read 5′ → 3′ left to right, so that
+              <a href="https://en.wikipedia.org/wiki/CpG_site">CpG sites</a>
+              appear as <tt>CG</tt> in your file.  Sequence contexts other than CpG,
+              <a href="https://en.wikipedia.org/wiki/DNA_methylation#In_plants">such
+              as those occurring in plants</a>, are not currently considered.
+            </p>
+
+            <p>
+              Try it out for yourself by
+              <a ng-click="app.loadURL('examples/HXB2-ENV.fasta', 'Example: HXB2 ENV')">loading an example alignment</a>
+              (or <a href="examples/HXB2-ENV.fasta">download the FASTA</a>).
+            </p>
+
+            <h4>Ambiguous sites</h4>
+            <p>
+              At CpG sites, your converted sequences may use the standard
+              <a href="https://en.wikipedia.org/wiki/Nucleic_acid_notation#IUPAC_notation">IUPAC symbol</a>
+              <tt>Y</tt> to represent a position that’s observed as
+              both <tt>C</tt> and <tt>T</tt> in your sample population.
+            </p>
+
+            <p>
+              While such sites will be plotted and counted towards the total
+              number of CpG sites, they are not considered methylated when
+              calculating the methylation level of each sequence, because there
+              is no simple way to specify the relative ratio of <tt>C</tt> to
+              <tt>T</tt>.
+            </p>
+
+            <p>
+              <tt>Y</tt> may also be used at CpH (non-CpG cytosine) sites in your
+              converted sequences, and in this case such sites are considered
+              conversion failures when calculating the conversion rate.  The
+              asymmetry of YpG vs. YpH handling is the result of differences in
+              what it means to be conservative when judging the methylation level
+              vs. the quality of the conversion.
+            </p>
+
+            <p>
+              All other ambiguous nucleotides are ignored.
+            </p>
+
+            <h4>Grouping sequences</h4>
+            <p>
+              The heatmap can optionally group your sequences together by a given
+              field, such as sample, tissue, culture, patient, or any other
+              property you provide.
+            </p>
+            <p>
+              In order to group sequences, each sequence name in your FASTA file
+              must be tagged using a special syntax which assigns the sequence a
+              value for a field name.  That syntax looks like this:
+            </p>
+            <pre>&gt;sequence_name [field=value] [subject=B] [identity=Cluster 1]</pre>
+            <p>
+              The first tag must be separated from the rest of the sequence name
+              by a space.  You may use any field name and value you want — even
+              spaces are ok — as long your tag is surrounded by square brackets
+              (<tt>[]</tt>) and split by an equals sign (<tt>=</tt>).  The field
+              names will automatically show up in the grouping dropdown within
+              the <i>Heatmap options</i> panel.
+            </p>
+            <p>
+              Take a look at the plain text of the
+              <a href="examples/HXB2-ENV.fasta">example FASTA</a> to see a full
+              alignment where each sequence has two tagged fields, “subject” and
+              “identity”.
+            </p>
+          </div>
+
+          <div class="resources">
+            <h4>Other resources</h4>
+            <p>
+              Other tools for methylation analysis and
+              visualization include
+              <a href="http://services.ibc.uni-stuttgart.de/BDPC/BISMA/index_repetitive.php#AlignedSequences">BISMA</a> and
+              <a href="http://biq-analyzer.bioinf.mpi-inf.mpg.de">BiQ Analyzer’s</a>
+              <a href="http://biq-analyzer.bioinf.mpi-inf.mpg.de/tools/MethylationDiagrams/">diagram tool</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loaded alignment header -->
+      <div class="row">
+        <div class="col col-sm-12 col-md-9">
+          <div ng-if="app.error" class="alert alert-danger" role="alert" ng-cloak>
+            😟 {{ app.error }}
+          </div>
+          <div ng-if="app.alignment.reference.stats.CpG.count === 0" class="alert alert-danger" role="alert" ng-cloak>
+            🤔 Hmmm, there don’t appear to be any CpG sites in this alignment!
+            Did you open the right file?
+          </div>
+          <div class="alignment-name" ng-if="app.fasta.name" ng-cloak>
+            <a ng-click="app.fasta = null" class="close-file small pull-right text-danger">
+              close <span class="glyphicon glyphicon-remove-circle"></span>
+            </a>
+            <h4>
+              {{ app.fasta.name }}
+              <small ng-if="app.alignment" ng-cloak>
+                {{ app.alignment.sequences[0].seq.length | number }}bp alignment of
+                {{ app.alignment.sequences.length | number }} sequences
+              </small>
+            </h4>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alignment "lollipop"-esque diagram -->
+      <div class="row">
+        <div class="col col-sm-12 col-md-9">
+          <figure>
+            <methylation-diagram
+              data="app.alignment.filteredSites"
+              rendered="diagram.rendered"
+              to-url="diagram.toURL"
+              signals="diagram.signals"
+              ng-init="diagram.signals = {}">
+            </methylation-diagram>
+            <figcaption ng-if="diagram.rendered" ng-cloak>
+              <p ng-show="!app.summarizeGroups">
+                Black circles
+                  <svg height="10" width="10" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                    <circle cx="5" cy="5" r="4" fill="#333" stroke="#333" stroke-width="1px" />
+                  </svg>
+                are methylated CpG sites.
+
+                White circles
+                  <svg height="10" width="10" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                    <circle cx="5" cy="5" r="4" fill="white" stroke="#333" stroke-width="1px" />
+                  </svg>
+                are unmethylated CpG sites.
+
+                Half-filled black circles
+                  <svg height="10" width="10" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                    <circle cx="5" cy="5" r="4" fill="url(#half-filled) #ccc" stroke="#333" stroke-width="1px" />
+                  </svg>
+                are mixed methylation sites (<tt>Y</tt> in the alignment).
+
+                <em ng-if="app.filter.hideNovelCpG">Non-reference (novel) CpG sites are not shown.</em>
+
+                Small red circles
+                  <svg height="10" width="10" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                    <circle cx="5" cy="5" r="2" fill="red" stroke="red" stroke-width="0.8px" />
+                  </svg>
+                are bisulfite-conversion failures<em ng-if="app.filter.hideCpH"> (currently hidden)</em>.
+
+                Half-filled red circles
+                  <svg height="10" width="10" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                    <circle cx="5" cy="5" r="2" fill="url(#half-filled-red) #fcc" stroke="red" stroke-width="0.8px" />
+                  </svg>
+                are partially converted sites.
+              </p>
+              <p ng-show="app.summarizeGroups">
+                Methylation level for each reference CpG site is shown using
+                the following symbols, representing an evenly quantized scale
+                from always methylated to never methylated:
+
+                <svg height="10" width="60" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                  <circle cx="5"  cy="5" r="4" stroke="#333" stroke-width="1px" fill="#333" />
+                  <circle cx="15" cy="5" r="4" stroke="#333" stroke-width="1px" fill="url(#diagonal-stripe-5) #5c5c5c" />
+                  <circle cx="25" cy="5" r="4" stroke="#333" stroke-width="1px" fill="url(#diagonal-stripe-4) #858585" />
+                  <circle cx="35" cy="5" r="4" stroke="#333" stroke-width="1px" fill="url(#diagonal-stripe-3) #adadad" />
+                  <circle cx="45" cy="5" r="4" stroke="#333" stroke-width="1px" fill="url(#diagonal-stripe-2) #d6d6d6" />
+                  <circle cx="55" cy="5" r="4" stroke="#333" stroke-width="1px" fill="white" />
+                </svg>.
+
+                Non-reference (novel) CpG sites, mixed methylation (YpG) sites,
+                and failed conversions are not shown.
+              </p>
+              <p>
+                <span ng-switch="diagram.signals.siteLabelField">
+                  <span ng-switch-when="site">
+                    Site locations refer to alignment base positions<em
+                      ng-if="diagram.signals.siteLabelOffset">
+                        {{ diagram.signals.siteLabelOffset > 0 ? 'plus' : 'minus' }}
+                        {{ diagram.signals.siteLabelOffset | abs | number: 0 }}</em>.
+                  </span>
+                  <span ng-switch-when="rank">
+                    Sites are numbered in order from left to right, starting at
+                    {{ 1 + diagram.signals.siteLabelOffset }}.
+                  </span>
+                  <span ng-switch-default></span>
+                </span>
+
+                <span ng-hide="diagram.signals.hideSequenceLabels">
+                  Percentages are the mean per-site methylation level.  Mixed
+                  methylation sites are considered unmethylated for this
+                  calculation.
+                </span>
+              </p>
+              <p>
+                Resize your browser window to make the image wider.  Increase
+                the font size in your browser to make the whole image larger.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="col col-sm-6 col-md-3" ng-if="diagram.rendered" ng-cloak>
+          <div class="panel panel-default small options-panel">
+            <div class="panel-heading">
+              Diagram options
+            </div>
+            <div class="panel-body">
+              <div class="checkbox" ng-class="{ disabled: app.summarizeGroups }">
+                <label>
+                  <input type="checkbox" ng-model="app.filter.hideCpH" ng-change="app.update()"
+                    ng-disabled="app.summarizeGroups">
+                  Hide failed conversions
+                </label>
+              </div>
+              <div class="checkbox" ng-class="{ disabled: app.summarizeGroups }">
+                <label>
+                  <input type="checkbox" ng-model="app.filter.hideNovelCpG" ng-change="app.update()"
+                    ng-disabled="app.summarizeGroups">
+                  Hide non-reference CpG sites
+                </label>
+              </div>
+              <div class="checkbox" ng-class="{ disabled: app.summarizeGroups }">
+                <label>
+                  <input type="checkbox" ng-model="app.filter.hideMixedSites" ng-change="app.update()"
+                    ng-disabled="app.summarizeGroups">
+                  Hide mixed methylation (YpG) sites
+                </label>
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" ng-model="diagram.signals.hideSequenceLabels">
+                  Hide sequence labels
+                </label>
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" ng-model="app.sortByMethylation" ng-change="app.update()">
+                  Sort by percent methylated
+                </label>
+              </div>
+              <div class="form-group">
+                <label for="group-sequences-by">Group sequences</label>
+                <select ng-model="app.groupBy"
+                        ng-options="tag.path as 'by ' + tag.name for tag in app.alignment.sequences.tags | orderBy: 'name'"
+                        ng-change="app.update()"
+                        ng-disabled="!app.alignment.sequences.tags.length"
+                        class="form-control"
+                        id="group-sequences-by">
+                  <option value="">all together</option>
+                </select>
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" ng-model="app.summarizeGroups" ng-change="app.update()">
+                  Summarize groups
+                </label>
+              </div>
+              <div class="form-group">
+                <label for="cpg-sites-label">Label CpG sites with</label>
+                <select ng-model="diagram.signals.siteLabelField"
+                        ng-init="diagram.signals.siteLabelField = 'site'"
+                        class="form-control"
+                        id="cpg-sites-label">
+                  <option value="">nothing</option>
+                  <option value="rank">site number</option>
+                  <option value="site">alignment position</option>
+                </select>
+                <div class="input-group pull-right" style="max-width: 12em; margin-top: 12px">
+                  <span class="input-group-addon">offset by</span>
+                  <input type="number" class="form-control text-right"
+                    ng-model="diagram.signals.siteLabelOffset"
+                    ng-init="diagram.signals.siteLabelOffset = 0"
+                    ng-disabled="!diagram.signals.siteLabelField">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alignment heatmap -->
+      <div class="row" ng-if="app.alignment" ng-cloak>
+        <div class="col col-sm-12 col-md-9">
+          <h4>Summary heatmap</h4>
+          <figure>
+            <methylation-heatmap
+              alignment="app.alignment"
+              order-by="heatmap.orderBy"
+              group-by="heatmap.groupBy"
+              groups="heatmap.groups"
+              site-label-field="diagram.signals.siteLabelField"
+              site-label-offset="diagram.signals.siteLabelOffset">
+            </methylation-heatmap>
+            <figcaption>
+              <p>
+                Reference CpG sites are shown across the top.  Groups of
+                converted sequences are shown along the left side.  Percentages
+                and colors indicate the methylation level of a particular site
+                within a group of sequences.  The final column is the mean
+                per-site methylation level for the given group.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="col col-sm-6 col-md-3">
+          <div class="panel panel-default small options-panel">
+            <div class="panel-heading" ng-click="heatmap.optionsHidden = !heatmap.optionsHidden">
+              Heatmap options
+              <span class="pull-right">
+                <span class="glyphicon" ng-class="{
+                  'glyphicon-collapse-up':    heatmap.optionsHidden,
+                  'glyphicon-collapse-down': !heatmap.optionsHidden }"></span>
+                <span class="sr-only">Toggle options panel</span>
+              </span>
+            </div>
+            <div class="panel-body" ng-hide="heatmap.optionsHidden">
+              <div class="form-group">
+                <label for="heatmap-group-sequences-by">Group sequences</label>
+                <select ng-model="heatmap.groupBy"
+                        ng-options="tag.path as 'by ' + tag.name for tag in app.alignment.sequences.tags | orderBy: 'name'"
+                        ng-disabled="!app.alignment.sequences.tags.length"
+                        class="form-control"
+                        id="heatmap-group-sequences-by">
+                  <option value="">all together</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="heatmap-order">Order by</label>
+                <select ng-model="heatmap.orderBy"
+                        ng-init="heatmap.orderBy = 'key'"
+                        ng-disabled="heatmap.groups.length <= 1"
+                        class="form-control" id="heatmap-order">
+                  <!--
+                    These values are property paths as strings, interpreted by
+                    dl.accessor(), on a heatmap sequence group object.
+                  -->
+                  <option value="key">group name</option>
+                  <option value="values.meanMethylation">mean methylation</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer row">
+        <div class="col col-sm-12 col-md-8">
+          <hr>
+          <!--<p>
+            A project of the
+            <a href="https://mullinslab.microbiol.washington.edu">Mullins Molecular Retrovirology Lab</a>
+            at the <a href="https://washington.edu">University of Washington</a>.
+          </p>-->
+          <p>
+            Copyright © 2025
+            <a href="https://fredhutch.org">Fred Hutchinson Cancer Center</a>.
+            <a href="https://github.com/MullinsLab/Methylation-Station">Source code</a> available under the MIT license.
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+
+  <svg id="gradients" height="1" width="1" xmlns="http://www.w3.org/2000/svg" version="1.1">
+    <!--
+      These definitions get embedded in exported SVG documents, so make sure
+      the source below is valid XML (not just HTML).
+    -->
+    <defs>
+      <linearGradient id="half-filled">
+        <stop offset="0%"   stop-color="white" />
+        <stop offset="50%"  stop-color="white" />
+        <stop offset="50%"  stop-color="#333" />
+        <stop offset="100%" stop-color="#333" />
+      </linearGradient>
+      <linearGradient id="half-filled-blue">
+        <stop offset="0%"   stop-color="white" />
+        <stop offset="50%"  stop-color="white" />
+        <stop offset="50%"  stop-color="blue" />
+        <stop offset="100%" stop-color="blue" />
+      </linearGradient>
+      <linearGradient id="half-filled-red">
+        <stop offset="0%"   stop-color="white" />
+        <stop offset="50%"  stop-color="white" />
+        <stop offset="50%"  stop-color="red" />
+        <stop offset="100%" stop-color="red" />
+      </linearGradient>
+
+      <!--
+        Four diagonal stripe patterns of increasing darkness, each in
+        white/black and white/blue, adapted from the lovely patternfills
+        project <https://github.com/iros/patternfills>, made available under
+        the MIT license.
+      -->
+      <pattern id="diagonal-stripe-2" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="scale(0.33, 0.33)">
+        <rect width='10' height='10' fill='white'/>
+        <path d='M-1,1 l2,-2
+                 M0,10 l10,-10
+                 M9,11 l2,-2' stroke='#333' stroke-width='2'/>
+      </pattern>
+      <pattern id="diagonal-stripe-3" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="scale(0.33, 0.33)">
+        <rect width='10' height='10' fill='white'/>
+        <path d='M-1,1 l2,-2
+                 M0,10 l10,-10
+                 M9,11 l2,-2' stroke='#333' stroke-width='3'/>
+      </pattern>
+      <pattern id="diagonal-stripe-4" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="scale(0.33, 0.33)">
+        <rect width='10' height='10' fill='#333'/>
+        <path d='M-1,1 l2,-2
+                 M0,10 l10,-10
+                 M9,11 l2,-2' stroke='white' stroke-width='3'/>
+      </pattern>
+      <pattern id="diagonal-stripe-5" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="scale(0.33, 0.33)">
+        <rect width='10' height='10' fill='#333'/>
+        <path d='M-1,1 l2,-2
+                 M0,10 l10,-10
+                 M9,11 l2,-2' stroke='white' stroke-width='2'/>
+      </pattern>
+
+      <!-- Blue! -->
+      <pattern id="blue-diagonal-stripe-2" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="scale(0.33, 0.33)">
+        <rect width='10' height='10' fill='white'/>
+        <path d='M-1,1 l2,-2
+                 M0,10 l10,-10
+                 M9,11 l2,-2' stroke='blue' stroke-width='2'/>
+      </pattern>
+      <pattern id="blue-diagonal-stripe-3" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="scale(0.33, 0.33)">
+        <rect width='10' height='10' fill='white'/>
+        <path d='M-1,1 l2,-2
+                 M0,10 l10,-10
+                 M9,11 l2,-2' stroke='blue' stroke-width='3'/>
+      </pattern>
+      <pattern id="blue-diagonal-stripe-4" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="scale(0.33, 0.33)">
+        <rect width='10' height='10' fill='blue'/>
+        <path d='M-1,1 l2,-2
+                 M0,10 l10,-10
+                 M9,11 l2,-2' stroke='white' stroke-width='3'/>
+      </pattern>
+      <pattern id="blue-diagonal-stripe-5" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="scale(0.33, 0.33)">
+        <rect width='10' height='10' fill='blue'/>
+        <path d='M-1,1 l2,-2
+                 M0,10 l10,-10
+                 M9,11 l2,-2' stroke='white' stroke-width='2'/>
+      </pattern>
+    </defs>
+  </svg>
+
+  <div id="file-drop-screen" class="hidden">
+    <span class="glyphicon glyphicon-open-file text-primary"></span>
+  </div>
+
+  <script src="js/vendor/d3-3.5.5.min.js"></script>
+  <script src="js/vendor/vega-2.6.5-patched.js"></script>
+  <script src="js/vendor/datalib-0.1.14.min.js"></script>
+  <script src="js/vendor/angular-1.6.1.min.js"></script>
+  <script src="js/vendor/angular-debounce-1.1.0.min.js"></script>
+  <script src="js/methylation-diagram-spec.js"></script>
+  <script src="js/alignment.js"></script>
+  <script src="js/alignment-heatmap.js"></script>
+  <script src="js/fileModel.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/controller.js"></script>
+  <script src="js/diagram.js"></script>
+  <script src="js/heatmap-table.js"></script>
+</html>
+<!-- vi: set ts=2 sw=2 : -->
